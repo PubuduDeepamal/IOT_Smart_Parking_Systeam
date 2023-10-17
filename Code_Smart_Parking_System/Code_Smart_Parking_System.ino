@@ -4,9 +4,14 @@
 #include <LiquidCrystal_I2C.h>
 #include <ESP32Servo.h>
 
+#include "RTClib.h"
+
+RTC_DS3231 rtc;
+
+
 #define FIREBASE_HOST "smart-parking-system-acf8a-default-rtdb.firebaseio.com/"
-#define WIFI_SSID "iPhone" 
-#define WIFI_PASSWORD "12345678" 
+#define WIFI_SSID "iPhone"
+#define WIFI_PASSWORD "12345678"
 #define FIREBASE_Authorization_key "um1a4J0tPZjOCsS7TUviCyjDwxwxhBmuoFhHnhOw"
 
 FirebaseData firebaseData;
@@ -21,7 +26,7 @@ bool servoClosed = false;
 bool servoJustOpened = false;
 
 LiquidCrystal_I2C lcd1(0x27, 16, 2);
-LiquidCrystal_I2C lcd2(0x3F, 16, 2);
+LiquidCrystal_I2C lcd2(0x68, 16, 2);
 
 const int ledPins[] = {12, 14, 27, 26};
 const int numLeds = sizeof(ledPins) / sizeof(ledPins[0]);
@@ -51,6 +56,15 @@ int buzzerPin = 32;
 bool buzzerRinging = false;
 
 int servoPin = 13;
+
+
+int i = 0;
+int count;
+int buttonPin = 36;
+int irPin =  39;
+
+int buttonState ;
+boolean irState = HIGH;
 
 void setup() {
   Serial.begin(9600);
@@ -98,6 +112,16 @@ void setup() {
   myservo.attach(servoPin, 500, 2400);
   myservo.write(openAngle);
   delay(300);
+
+  if (! rtc.begin()) {
+    Serial.println("Couldn't find RTC");
+    Serial.flush();
+    while (1) delay(10);
+  }
+  pinMode(buttonPin, INPUT);
+  pinMode(irPin,  INPUT);
+
+
 }
 
 long getDistance(int trigPin, int echoPin) {
@@ -120,6 +144,14 @@ void loop() {
   long distance2 = getDistance(trigPin2, echoPin2);
   long distance3 = getDistance(trigPin3, echoPin3);
   long distance4 = getDistance(trigPin4, echoPin4);
+
+
+  DateTime now = rtc.now();
+
+
+
+  count = now.second();
+
 
 
 
@@ -317,50 +349,148 @@ void loop() {
   Serial.print("\t");
 
   Serial.print("Slot 4: ");
-  Serial.println(slot4);
+  Serial.print(slot4);
+  Serial.print("\t");
 
-  lcd1.setCursor(0, 0);
-  lcd1.print("Slot1:");
-  lcd1.print(slot1);
+  Serial.print("Seconds : ");
+  Serial.print(count);
+  Serial.print("\t");
+  Serial.print("Vehicle Count: ");
+  Serial.println(i);
 
-  lcd1.setCursor(0, 1);
-  lcd1.print("Slot2:");
-  lcd1.print(slot2);
 
-  lcd1.setCursor(9, 0);
-  lcd1.print("Slot3:");
-  lcd1.print(slot3);
 
-  lcd1.setCursor(9, 1);
-  lcd1.print("Slot4:");
-  lcd1.print(slot4);
+  /*
+    lcd2.setCursor(0, 0);
+    lcd2.print("Slot1:");
+    lcd2.print(slot1);
 
-  lcd2.setCursor(0, 0);
-  lcd2.print("Slot1:");
-  lcd2.print(slot1);
+    lcd2.setCursor(0, 1);
+    lcd2.print("Slot2:");
+    lcd2.print(slot2);
 
-  lcd2.setCursor(0, 1);
-  lcd2.print("Slot2:");
-  lcd2.print(slot2);
+    lcd2.setCursor(9, 0);
+    lcd2.print("Slot3:");
+    lcd2.print(slot3);
 
-  lcd2.setCursor(9, 0);
-  lcd2.print("Slot3:");
-  lcd2.print(slot3);
+    lcd2.setCursor(9, 1);
+    lcd2.print("Slot4:");
+    lcd2.print(slot4);
+  */
 
-  lcd2.setCursor(9, 1);
-  lcd2.print("Slot4:");
-  lcd2.print(slot4);
+  buttonState = digitalRead(buttonPin);
+  if ( buttonState == 1) {
 
-  if (currentMillis - previousMillis >= interval) {
-    previousMillis = currentMillis;
+    if (count == 0) {
+      i = 0;
+    }
 
-    Firebase.setFloat(firebaseData, "/Parking_Slots/Slot_01", slot1);
-    Firebase.setFloat(firebaseData, "/Parking_Slots/Slot_02", slot2);
-    Firebase.setFloat(firebaseData, "/Parking_Slots/Slot_03", slot3);
-    Firebase.setFloat(firebaseData, "/Parking_Slots/Slot_04", slot4);
+    else {
 
-    Firebase.setFloat(firebaseData, "/Gate_Status/Gate_01", gate);
-    Firebase.setFloat(firebaseData, "/Gate_Status/Gate_02", gate);
+      if (debounceButton(irState) == LOW && irState == HIGH)
+      {
+        i++;
+        irState = LOW;
+      }
+      else if (debounceButton(irState) == HIGH && irState == LOW)
+      {
+        irState = HIGH;
+      }
+
+    }
+
+    lcd1.setCursor(0, 0);
+    lcd1.print("Slot1:");
+    lcd1.print(slot1);
+
+    lcd1.setCursor(0, 1);
+    lcd1.print("Slot2:");
+    lcd1.print(slot2);
+
+    lcd1.setCursor(9, 0);
+    lcd1.print("Slot3:");
+    lcd1.print(slot3);
+
+    lcd1.setCursor(9, 1);
+    lcd1.print("Slot4:");
+    lcd1.print(slot4);
+
+    lcd2.setCursor(1, 0);
+    lcd2.print("Vehicle Count:");
+    lcd2.setCursor(6, 1);
+    lcd2.print(i);
 
   }
+
+  else {
+
+    if (count == 0) {
+      i = 0;
+    }
+
+    else {
+
+      if (debounceButton(irState) == LOW && irState == HIGH)
+      {
+        i++;
+        irState = LOW;
+      }
+      else if (debounceButton(irState) == HIGH && irState == LOW)
+      {
+        irState = HIGH;
+      }
+
+    }
+
+    lcd1.setCursor(0, 0);
+    lcd1.print("Slot1:");
+    lcd1.print(slot1);
+
+    lcd1.setCursor(0, 1);
+    lcd1.print("Slot2:");
+    lcd1.print(slot2);
+
+    lcd1.setCursor(9, 0);
+    lcd1.print("Slot3:");
+    lcd1.print(slot3);
+
+    lcd1.setCursor(9, 1);
+    lcd1.print("Slot4:");
+    lcd1.print(slot4);
+
+    lcd2.setCursor(1, 0);
+    lcd2.print("Vehicle Count:");
+    lcd2.setCursor(6, 1);
+    lcd2.print(i);
+
+    if (currentMillis - previousMillis >= interval) {
+      previousMillis = currentMillis;
+      
+            Firebase.setFloat(firebaseData, "/Parking_Slots/Slot_01", slot1);
+            Firebase.setFloat(firebaseData, "/Parking_Slots/Slot_02", slot2);
+            Firebase.setFloat(firebaseData, "/Parking_Slots/Slot_03", slot3);
+            Firebase.setFloat(firebaseData, "/Parking_Slots/Slot_04", slot4);
+
+            Firebase.setFloat(firebaseData, "/Gate_Status/Gate_01", gate);
+            Firebase.setFloat(firebaseData, "/Gate_Status/Gate_02", gate);
+
+             Firebase.setFloat(firebaseData, "/Vehicle_Count/Count", i);
+
+      
+
+    }
+  }
+
+}
+
+boolean debounceButton(boolean state)
+{
+  boolean stateNow = digitalRead(irPin);
+  if (state != stateNow)
+  {
+    delay(10);
+    stateNow = digitalRead(irPin);
+  }
+  return stateNow;
+
 }
