@@ -358,26 +358,6 @@ void loop() {
   Serial.print("Vehicle Count: ");
   Serial.println(i);
 
-
-
-  /*
-    lcd2.setCursor(0, 0);
-    lcd2.print("Slot1:");
-    lcd2.print(slot1);
-
-    lcd2.setCursor(0, 1);
-    lcd2.print("Slot2:");
-    lcd2.print(slot2);
-
-    lcd2.setCursor(9, 0);
-    lcd2.print("Slot3:");
-    lcd2.print(slot3);
-
-    lcd2.setCursor(9, 1);
-    lcd2.print("Slot4:");
-    lcd2.print(slot4);
-  */
-
   buttonState = digitalRead(buttonPin);
   if ( buttonState == 1) {
 
